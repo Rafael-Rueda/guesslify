@@ -1,0 +1,24 @@
+{% load static %}
+<div class="menu">
+    <div class="logo">
+        <img src="{% static 'global/images/garayulogo.png' %}" alt="">
+    </div>
+
+    <div class="rooms-available">
+        <h2>Rooms available: {{rooms_available}}</h2>
+    </div>
+    
+    <div class="nickname">
+        <form method="POST" action="{% url 'rooms:rooms_checkin' %}">
+            {% csrf_token %}
+            {% for field in form %}
+                <label for="{{field.id_for_label}}">{{field.label}}</label>
+                {{field}}
+                {{field.errors}}
+            {% endfor %}
+            
+            <button type="submit">Play !</button>
+        </form>
+    </div>
+    
+</div>

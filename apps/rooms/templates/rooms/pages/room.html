@@ -1,0 +1,498 @@
+{% extends "global/partials/headbase.html" %}
+{% block title %}Room {{room.name}}{% endblock title %}
+{% block body %}
+    {% include "global/partials/background.html" %}
+    <div class="room-container">
+        <div class="players" id="players">
+            <h2>Players:</h2>
+            {% for user_in_room in all_users_in_room %}
+                <p>{% if user_in_room.host %}<i class="fa-solid fa-crown"></i>{% else %}<i class="fa-solid fa-user"></i>{% endif %} {{user_in_room.user.first_name}}</p>
+            {% endfor %}
+        </div>
+        
+        <div class="controls">
+            <form class="leave-room" method="POST" action="{% url "rooms:rooms_leave" %}">
+                {% csrf_token %}
+                <button type="submit">Leave</button>
+            </form>
+            {% if is_host %}
+                <div class="configs">
+                    
+                </div>
+                <button type="submit" id="start-game">Start Game</button>
+            {% else %}
+                <p>Waiting for the host to start the game...</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+        $(document).ready(function () {
+            function getUsersInRoom() {
+                $.ajax({
+                    url: '{% url "rooms:get_users_in_room" room.slug %}',
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function (data) {
+                        // Update the users list
+                        updateUsersList(data.users);
+                    },
+                    error: function () {
+                        console.error('Failed to fetch users in the room.');
+                    },
+                });
+            }
+
+            function updateUsersList(users) {
+                var usersList = $('#players');
+                usersList.empty();  // Clear the existing list
+                
+                var titleElement = $('<h2>').text("Players:");
+                usersList.append(titleElement);
+                // Append each user to the list
+                users.forEach(function (user) {
+                    var userElement = $('<p>');
+                    if (user.host) {
+                        var userCrown = $('<i>').addClass("fa-solid fa-crown");
+                        userElement.prepend(userCrown);
+                    } else {
+                        var userIcon = $('<i>').addClass("fa-solid fa-user");
+                        userElement.prepend(userIcon);
+                    }
+                    userElement.append(' ' + user.nickname);
+                    usersList.append(userElement);
+                });
+            }
+
+            // Fetch users every second
+            getInterval = setInterval(getUsersInRoom, 1000);
+
+            // Start the game <--------------------------------------------------------------------------------------------
+
+            function game_started(is_host, is_voting) {
+                $.ajax({
+                    url: '{% url "game:game_running" room.slug %}',
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function (data) {
+                        createMusicElement(data);
+                    },
+                    error: function () {
+                        if (!is_voting) {
+                            if (is_host) {
+                                sortMusic();
+                            } else {
+                                loadMusic();
+                            }
+                        }
+                    },
+                });
+
+                $('.players').remove()
+                $('.controls').remove()
+
+                var controlsDiv = $('<div>', {
+                    'class': 'controls'
+                });
+        
+                var leaveRoomForm = $('<form>', {
+                    'class': 'leave-room',
+                    'method': 'POST',
+                    'action': '{% url "rooms:rooms_leave" %}'
+                });
+        
+                leaveRoomForm.append($('<input>', {
+                    'type': 'hidden',
+                    'name': 'csrfmiddlewaretoken',
+                    'value': '{{ csrf_token }}'
+                }));
+        
+                var leaveButton = $('<button>', {
+                    'type': 'submit',
+                    'text': 'Leave',
+                    'class': 'outconfig'
+                });
+        
+                leaveRoomForm.append(leaveButton);
+        
+                // controlsDiv.append(leaveRoomForm);
+        
+                $('.room-container').append(leaveRoomForm);
+            }
+
+            end_game = 0;
+
+            function sortMusic() {
+                $.ajax({
+                    url: '{% url "game:game_sort_music" room.slug %}',
+                    type: 'POST',
+                    dataType: 'json',
+                    success: function (data) {
+                        createMusicElement(data);
+                    },
+                    error: function () {
+                        console.error('Failed to sort musics.');
+                        end_game += 1;
+                    },
+                });
+            }
+            function loadMusic() {
+                $.ajax({
+                    url: '{% url "game:game_running" room.slug %}',
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function (data) {
+                        createMusicElement(data);
+                    },
+                    error: function () {
+                        loadMusic();
+                    },
+                });
+            }
+            // Pause when the user leave / unfocus the page.
+            /* var isPageVisible = true;
+
+            document.addEventListener("visibilitychange", function () {
+                isPageVisible = !document.hidden;
+        
+                if (!isPageVisible) {
+                    $('.music-player')[0].pause();
+                } else {
+                    $('.music-player')[0].play();
+                }
+            }); */
+
+            function createMusicElement(data) {
+                $('.music-container').empty();
+                $('.vote-list').empty();
+                if ($('.music-container').length) {
+                    $('.music-container').remove();
+                }
+                var $musicContainer = $('<div>').addClass('music-container');
+                var $musicCover = $('<img>').addClass('music-cover').attr('src', data.music_cover).attr('alt', 'Music Cover');
+                var $musicPlayer = $('<audio>').addClass('music-player').attr('src', data.music_src).attr('autoplay', true).attr('controls', false);
+                $musicPlayer[0].controlsList = "nodownload noplaybackrate";
+                $musicPlayer[0].volume = 0.1;
+                var $musicName = $('<p>').addClass('music-name').text(data.music_name);
+                var $musicArtist = $('<p>').addClass('music-artist').text(data.music_artist);
+        
+                // Circle effect
+
+                var frameContainer = $('<div class="frame-container"></div>');
+                var circlesElement = $('<div class="circles"></div>');
+                for (var i = 0; i < 6; i++) {
+                    circlesElement.append('<div class="circle"></div>');
+                }
+                frameContainer.append(circlesElement);
+                $musicContainer.append(frameContainer);
+                
+                $musicPlayer[0].play();
+
+                $musicPlayer.on('ended', function () {
+                    // console.log('Audio has finished playing');
+                    endMusic();
+                });
+
+                $musicContainer.append($musicCover, $musicPlayer, $musicName, $musicArtist);
+                $('.room-container').append($musicContainer)
+            }
+
+            function endMusic() {
+                $.ajax({
+                    url: '{% url "game:game_end_music" room.slug %}',
+                    type: 'POST',
+                    dataType: 'json',
+                    success: function (data) {
+                        $('.music-container').animate({
+                            top: '-100%',
+                            opacity: 0
+                        }, 1000, function () {
+                            $(this).remove();
+                        });
+                    },
+                    error: function () {
+                        
+                    },
+                });
+            }
+
+            let lock_game_ended = true;
+
+            function checkMusicEnded() {
+                try {
+                    $musicPlayer = $('.music-player');
+                    $musicPlayer[0].play();
+
+                    if ($('.message').length && !$musicPlayer[0].paused) {
+                        $('.message').remove();
+                    }
+
+                    if($musicPlayer[0].paused) {
+                        $message = $('<div>').addClass('message').addClass('message-warning').text('Please, interact with the page to listen the music.');
+    
+                        $('body').append($message);
+                    }
+                } catch (error) {  
+                }
+                $.ajax({
+                    url: '{% url "game:game_ended_music" room.slug %}',
+                    type: 'POST',
+                    dataType: 'json',
+                    success: function (data) {
+                        if (data.started && !data.results && !data.game_ended) {
+                            voteTime(data);
+                            clearInterval(checkMusicInterval);
+                        } else if (data.results) {
+                            showResults(data.result_user);
+                            voteEnd(data.is_host);
+                        }
+
+                        if(data.game_ended && lock_game_ended) {
+                            voteTime(data);
+                            clearInterval(checkMusicInterval);
+                            lock_game_ended = false;
+                        }
+                    },
+                    error: function () {
+                    },
+                });
+
+                if (end_game >= 5) {
+                    clearInterval(checkMusicInterval);
+                    game_ended();
+                }
+            }
+            
+            // Check every second if the music ended
+            checkMusicInterval = setInterval(checkMusicEnded, 1000);
+
+            function checkRoomAvailability() {
+                $.ajax({
+                    url: '{% url "game:game_checking" room.slug %}',
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function (data) {
+                        if (data.started) {
+                            clearInterval(checkInterval);
+                            clearInterval(getInterval);
+                            game_started(data.is_host, data.is_voting);
+                        }
+                    },
+                    error: function () {
+                        console.error('Failed to check room availability.');
+                    },
+                });
+            }
+            
+            // Check every second if the room started
+            checkInterval = setInterval(checkRoomAvailability, 1000);
+
+            // Vote time <--------------------------------------------------------------------------------------------
+
+            function getAllUsersInRoom(callback) {
+                $.ajax({
+                    url: '{% url "game:get_all_users_in_room" room.slug %}',
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function (data) {
+                        callback(data.all_users_in_room);
+                    },
+                    error: function () {
+                        console.error('Failed to get all users in the room.');
+                        callback([]);
+                    },
+                });
+            }
+
+            function voteTimeCreateElements() {
+                $('.music-container').animate({
+                    top: '-100%',
+                    opacity: 0
+                }, 1000, function () {
+                    $(this).remove();
+                });
+                
+                var $voteList = $('<div>').addClass('vote-list');
+                var $whoisthemusic = $('<h2>').text('Whose song is this ?');
+                var $timerprogress = $('<progress>').attr('value', 15).attr('max', 15).addClass('timer-progress');
+
+                if ($('.vote-list').length) {
+                    $('.vote-list').append($whoisthemusic);
+
+                    getAllUsersInRoom(function (all_users) {
+                        for (user_in_room of all_users) {
+                            var $button = $('<button>').text(user_in_room);
+                            $('.vote-list').append($button);
+                        }
+
+                        $('.vote-list').append($timerprogress);
+                    });
+                    
+                    /*
+                    {% for user_in_room in all_users_in_room %}
+                        var $button = $('<button>').text('{{ user_in_room.user.first_name }}');
+                        $('.vote-list').append($button);
+                    {% endfor %}
+                    
+                    $('.vote-list').append($timerprogress);
+                    */
+                } else {
+                    $voteList.append($whoisthemusic);
+
+                    getAllUsersInRoom(function (all_users) {
+                        for (user_in_room of all_users) {
+                            var $button = $('<button>').text(user_in_room);
+                            $voteList.append($button);
+                        }
+            
+                        $voteList.append($timerprogress);
+            
+                        $('.room-container').append($voteList);
+                    });
+
+                    /*
+                    {% for user_in_room in all_users_in_room %}
+                        var $button = $('<button>').text('{{ user_in_room.user.first_name }}');
+                        $voteList.append($button);
+                    {% endfor %}
+                    
+                    $voteList.append($timerprogress);
+
+                    $('.room-container').append($voteList);
+                    */
+                }
+                
+                
+                
+            }
+
+            function timerCount(is_host) {
+                $.ajax({
+                    url: '{% url "game:vote_timer" room.slug %}',
+                    type: 'POST',
+                    dataType: 'json',
+                    data: {
+                        'reset': false
+                    },
+                    success: function (data) {
+                        if (data.timing) {
+                            $('.timer-progress').attr('value', data.seconds);
+                        } else {
+                            clearInterval(timerInterval)
+                            $('.vote-list').empty();
+                            showResults(data.result_user);
+
+                            votingEnded(is_host);
+                        }
+                    },
+                    error: function () {
+                    },
+                });
+            }
+
+            function votingEnded(is_host) {
+                $.ajax({
+                    url: '{% url "game:vote_timer" room.slug %}',
+                    type: 'POST',
+                    dataType: 'json',
+                    data: {
+                        'reset': true
+                    },
+                    success: function (data) {
+                        voteEnd(is_host);
+                    },
+                    error: function () {
+                        
+                    },
+                });
+            }
+
+            function voteEnd(is_host) {
+                clearInterval(checkMusicInterval);
+                setTimeout(() => {
+                    if (is_host) {
+                        sortMusic();
+                    } else {
+                        loadMusic();
+                    }
+                    checkMusicInterval = setInterval(checkMusicEnded, 1000);
+
+                    $('.vote-list').empty();
+                    
+                    $.ajax({
+                        url: '{% url "game:set_results_false" room.slug %}',
+                        type: 'POST',
+                        dataType: 'json',
+                        success: function () {
+                        },
+                        error: function () {
+                        },
+                    });
+
+                    if (!lock_game_ended) {
+                        game_ended();
+                    }
+
+                },5000);
+            }
+
+            function voteTime(dataFromMusicEnded) {
+                voteTimeCreateElements();  
+                timerInterval = setInterval(() => {timerCount(dataFromMusicEnded.is_host)}, 1000)  
+            }
+
+            function showResults(resultUser) {
+                if (!$('.vote-list').length) {
+                    var $voteList = $('<div>').addClass('vote-list');
+                    $('.room-container').append($voteList);
+                }
+                if (!$('.result-user').length) {
+                    var $resultuser = $('<h2>').addClass('result-user').text(resultUser);
+                    $('.vote-list').append($resultuser);
+                }
+            }
+ 
+            // End the game <--------------------------------------------------------------------------------------------
+
+            function game_ended() {
+                $('.music-container').remove();
+                clearInterval(checkMusicInterval);
+                leaveRoom();
+            }
+
+            function leaveRoom() {
+                $.ajax({
+                    url: '{% url "rooms:rooms_leave" %}',
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function () {
+                    },
+                    error: function () {
+                    },
+                });
+            }
+        });
+    </script>
+    <script>
+        $(document).ready(function () { 
+
+            $('#start-game').on('click', function () {
+                
+                $.ajax({
+                    url: '{% url "game:game_start" room.slug %}',
+                    type: 'POST',
+                    dataType: 'json',
+                    success: function (data) {
+                        $('#start-game').prop("disabled", true);
+                    },
+                    error: function () {
+                        console.error('Failed to obtain a response.');
+                    },
+                });
+                
+            });
+
+        });
+    </script>
+
+{% endblock body %}

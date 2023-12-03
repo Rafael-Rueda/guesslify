@@ -1,0 +1,6 @@
+<div class="rejoin">
+    <p>You are already connected to a room</p>
+    <form action="{% url 'rooms:rooms_joining' room_connected.slug %}">
+        <button type="submit">Click here to come back</button>
+    </form>
+</div>

@@ -1,0 +1,132 @@
+{% extends "global/partials/headbase.html" %}
+{% block title %}Rooms{% endblock title %}
+{% block body %}
+    {% include "global/partials/background.html" %}
+    <div class="rooms-container">
+        <div class="create-a-room">
+            <p id="create-room-button">Create a room</p>
+            <div id="create-room-form-container" style="display: none;">
+                <form id="create-room-form" method="POST" action="{% url 'rooms:rooms_create' %}">
+                    {% csrf_token %}
+                    {% for field in form %}
+                        <div class="create-room-field">
+                            <label for="{{field.id_for_label}}">{{field.label}}</label>
+                            {{field}}
+                            {{field.errors}}
+                        </div>
+                    {% endfor %}
+                    <button type="submit">Create a room</button>
+                </form>
+            </div>
+        </div>
+        <div class="rooms">
+            {% for room in rooms %}
+                <div class="room">
+                    <h2>{{room.name}}</h2>
+                    <p>{{ room.userinroom_set.count }}/6</p>
+                    <form method="GET" action="{% url 'rooms:rooms_joining' room.slug %}">
+                        <button type="submit">Join</button>
+                    </form>                    
+                </div>
+            
+                {% empty %}
+                <p>There are no rooms available, however, you can create one !</p>
+            {% endfor %}
+        </div>
+
+        {% if user_connected %}
+            {% include "rooms/partials/rejoin.html" %}
+        {% endif %}
+
+    </div>
+
+    <script>
+        $(document).ready(function () {
+            function getRooms() {
+                $.ajax({
+                    url: '{% url "rooms:get_rooms" %}',
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function (data) {
+                        // Update the users list
+                        updateRoomsList(data.rooms);
+                    },
+                    error: function () {
+                        console.error('Failed to fetch rooms.');
+                    },
+                });
+            }
+
+            function updateRoomsList(rooms) {
+                var roomsList = $('.rooms');
+                var roomsContainer = $('.rooms-container');
+                var rejoinContainer = roomsContainer.find('.rejoin');
+            
+                // Clear the existing list and rejoin element
+                roomsList.empty();
+                rejoinContainer.remove();
+            
+                var rejoinElement;
+            
+                if (rooms.length === 0) {
+                    var noRoomsMessage = $('<p>').text('There are no rooms available, however, you can create one !');
+                    roomsList.append(noRoomsMessage);
+                } else {
+                    // Append each room to the list
+                    rooms.forEach(function (room) {
+                        // Rooms
+                        var roomElement = $('<div>').addClass('room');
+                        var h2Element = $('<h2>').text(room.name);
+                        var countElement = $('<p>').text(room.count + '/6');
+            
+                        var baseRoomsJoiningUrl = "/rooms/";
+                        var actionUrl = baseRoomsJoiningUrl + room.slug; + '/'
+            
+                        var formElement = $('<form>').attr({
+                            method: 'GET',
+                            action: actionUrl
+                        });
+            
+                        var buttonElement = $('<button>').attr('type', 'submit').text('Join');
+            
+                        formElement.append(buttonElement);
+                        roomElement.append(h2Element, countElement, formElement);
+                        roomsList.append(roomElement);
+            
+                        if (room.is_connected) {
+                            // Rejoin
+                            rejoinElement = $('<div>').addClass('rejoin');
+                            var rejoinPElement = $('<p>').text('You are already connected to a room');
+            
+                            var rejoinFormElement = $('<form>').attr({
+                                method: 'GET',
+                                action: actionUrl
+                            });
+            
+                            var rejoinButtonElement = $('<button>').attr('type', 'submit').text('Click here to come back');
+            
+                            rejoinFormElement.append(rejoinButtonElement);
+                            rejoinElement.append(rejoinPElement, rejoinFormElement);
+                        }
+                    });
+                }
+            
+                // Append the rejoin element as a sibling of the rooms div
+                roomsList.after(rejoinElement);
+            }
+            // Fetch users every second
+            setInterval(getRooms, 1000);
+        });
+    </script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var createRoomButton = document.getElementById('create-room-button');
+            var createRoomFormContainer = document.getElementById('create-room-form-container');
+
+            createRoomButton.addEventListener('click', function () {
+                createRoomFormContainer.style.display = createRoomFormContainer.style.display === 'none' ? 'block' : 'none';
+            });
+        });
+    </script>
+{% endblock body %}

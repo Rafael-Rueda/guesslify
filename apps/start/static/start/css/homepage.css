@@ -1,0 +1,23 @@
+.rgb-background {
+    position: absolute;
+    z-index: -1;
+    width: 100vw;
+    height: 100vh;
+    /* background:
+        linear-gradient(360deg, red 0%, rgba(255, 166, 0, 0) 50%),
+        linear-gradient(260deg, orange 0%, rgba(255, 255, 0, 0) 50%),
+        linear-gradient(160deg, yellow 0%, rgba(0, 128, 0, 0) 50%),
+        linear-gradient(60deg, green 0%, rgba(0, 0, 255, 0) 50%),
+        linear-gradient(-40deg, indigo 0%, rgba(238, 130, 238, 0) 50%),
+        linear-gradient(-140deg, violet 0%, rgba(238, 130, 238, 0) 50%); */
+    background: linear-gradient(120deg, #ff2400, #e81d1d, #e8b71d, #e3e81d, #1de840, #1ddde8, #2b1de8, #dd00f3, #dd00f3);
+    background-size: 500% 500%;
+    animation: body-animation infinite alternate ease-in-out 20s forwards;
+}
+
+
+@keyframes body-animation {
+    0%{background-position:0% 0%}
+    
+    100%{background-position:100% 100%}
+}

@@ -1,0 +1,15 @@
+.play-button {
+    padding: 8px;
+    color: white;
+    background-color: lawngreen;
+    border: none;
+    width: 500px;
+    height: 50px;
+    cursor: pointer;
+    font-size: 24px;
+    transition: background-color .3s ease-in-out;
+}
+
+.play-button:hover {
+    background-color: green;
+}
