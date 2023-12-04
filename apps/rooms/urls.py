@@ -1,11 +1,11 @@
 from django.urls import path
+
 from apps.rooms import views
 
 app_name = 'rooms'
 
 urlpatterns = [
     path('rooms-checkin/', views.rooms_checkin, name='rooms_checkin'),
-    path('delete_user/', views.delete_user, name='delete_user'),
     path('rooms/', views.rooms, name='rooms'),
     path('rooms/create/create-room/', views.rooms_create, name='rooms_create'),
     path('rooms/leave/leave-room/', views.rooms_leave, name='rooms_leave'),

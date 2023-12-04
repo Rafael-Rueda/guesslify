@@ -458,11 +458,24 @@
                 $('.music-container').remove();
                 clearInterval(checkMusicInterval);
                 leaveRoom();
+                deleteUser();
             }
 
             function leaveRoom() {
                 $.ajax({
                     url: '{% url "rooms:rooms_leave" %}',
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function () {
+                    },
+                    error: function () {
+                    },
+                });
+            }
+
+            function deleteUser() {
+                $.ajax({
+                    url: '{% url "start:delete_user" %}',
                     type: 'GET',
                     dataType: 'json',
                     success: function () {

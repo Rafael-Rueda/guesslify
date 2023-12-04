@@ -1,5 +1,6 @@
 import time
 
+import requests
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -10,7 +11,7 @@ from django.views.decorators.csrf import csrf_exempt
 from spotipy import Spotify, SpotifyOAuth
 
 from apps.game.models import PlaylistControl, QueueMusic, VoteTimer
-from apps.rooms.models import Room, UserInRoom
+from apps.rooms.models import Room, TokenForUser, UserInRoom
 
 
 @csrf_exempt
@@ -60,12 +61,12 @@ def game_start(request, slug):
 @csrf_exempt
 @login_required(login_url='start:home')
 def game_running(request, slug):
-    if 'token_info' not in request.session:
+    if not TokenForUser.objects.filter(user=request.user).exists():
         return HttpResponseBadRequest('Token information is missing.')
     
     room = Room.objects.filter(slug=slug).first()
 
-    token_info = request.session['token_info']
+    # token_info = request.session['token_info']
 
     # if token_info.get('expires_at', 0) < time.time():
     #         sp_oauth = SpotifyOAuth(
@@ -77,11 +78,28 @@ def game_running(request, slug):
     #         token_info = sp_oauth.refresh_access_token(token_info['refresh_token'])
     #         request.session['token_info'] = token_info
     
-    sp = Spotify(auth=token_info['access_token'])
+    # sp = Spotify(auth=token_info['access_token'])
 
 
-    playlists = sp.current_user_saved_tracks(limit=50) # Change this function based on the needs and modes of the game
-    
+    # playlists = sp.current_user_saved_tracks(limit=3) # Change this function based on the needs and modes of the game
+
+    access_token = TokenForUser.objects.filter(user=request.user).first().token
+
+    endpoint_url = 'https://api.spotify.com/v1/me/top/tracks'
+
+    params = {
+        'time_range': 'long_term',  # short_term, medium_term, long_term
+        'limit': 1,
+    }
+
+    response = requests.get(
+    endpoint_url,
+    headers={'Authorization': 'Bearer ' + access_token},
+    params= params
+    )
+
+    playlists = response.json()
+
     players_data = [{'user': player.user.username,'nickname': player.user.first_name, 'host': player.host} for player in UserInRoom.objects.filter(room=room)]
 
     current_username = request.user.username
@@ -90,10 +108,10 @@ def game_running(request, slug):
         for track in playlists['items']:
             PC_instance = PlaylistControl.objects.create(user=request.user,
                                         room=room,
-                                        playlist_preview_url=track['track']['preview_url'], 
-                                        playlist_cover=track['track']['album']['images'][1]['url'], 
-                                        playlist_name=track['track']['name'],
-                                        playlist_artist=track['track']['artists'][0]['name']
+                                        playlist_preview_url=track['preview_url'], 
+                                        playlist_cover=track['album']['images'][1]['url'], 
+                                        playlist_name=track['name'],
+                                        playlist_artist=track['artists'][0]['name']
                                         )
             PC_instance.save()
 
@@ -232,7 +250,6 @@ def get_all_users_in_room(request, slug):
     if room:
         usersinroom = UserInRoom.objects.filter(room=room)
         all_users_in_room = [user.user.first_name for user in usersinroom]
-        print(all_users_in_room)
         return JsonResponse({'all_users_in_room': all_users_in_room})
     else:
         return JsonResponse({})

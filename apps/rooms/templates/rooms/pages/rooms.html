@@ -129,4 +129,21 @@
             });
         });
     </script>
+
+    <script>
+        $(document).ready(function () {
+            const accessToken = window.location.hash.substr(1).split('&')[0].split('=')[1];
+
+            // Send the access_token to the server using a fetch request
+            fetch(`http://localhost:8000/rooms/?access_token=${accessToken}`, {
+            method: 'GET',
+            })
+            .then(response => {
+            // Handle the server's response
+            })
+            .catch(error => {
+            // Handle fetch error
+            });
+        })
+    </script>
 {% endblock body %}
