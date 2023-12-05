@@ -87,10 +87,38 @@ def game_running(request, slug):
 
     endpoint_url = 'https://api.spotify.com/v1/me/top/tracks'
 
-    params = {
-        'time_range': 'long_term',  # short_term, medium_term, long_term
-        'limit': 1,
-    }
+    allusersinroom = UserInRoom.objects.filter(room=room)
+    
+    if len(allusersinroom) == 1:
+        params = {
+            'time_range': 'long_term',  # short_term, medium_term, long_term
+            'limit': 4,
+        }
+    elif len(allusersinroom) == 2:
+        params = {
+            'time_range': 'long_term',
+            'limit': 8,
+        }
+    elif len(allusersinroom) == 3:
+        params = {
+            'time_range': 'long_term',
+            'limit': 8,
+        }
+    elif len(allusersinroom) == 4:
+        params = {
+            'time_range': 'long_term',
+            'limit': 6,
+        }
+    elif len(allusersinroom) == 5:
+        params = {
+            'time_range': 'long_term',
+            'limit': 5,
+        }
+    else:
+        params = {
+            'time_range': 'long_term',
+            'limit': 4,
+        }
 
     response = requests.get(
     endpoint_url,
@@ -253,3 +281,73 @@ def get_all_users_in_room(request, slug):
         return JsonResponse({'all_users_in_room': all_users_in_room})
     else:
         return JsonResponse({})
+    
+
+# Pontuation
+
+@csrf_exempt
+@login_required(login_url='start:home')
+def set_user_points(request, slug):
+    if not request.META.get('HTTP_X_REQUESTED_WITH') == 'XMLHttpRequest':
+        return HttpResponseBadRequest('Invalid request')
+    
+    room = Room.objects.filter(slug=slug).first()
+
+    userinroom = UserInRoom.objects.filter(room=room, user=request.user).first()
+
+    selected_player = userinroom.selected_player
+
+    correct_player = QueueMusic.objects.filter(room=room).first().queue.user.first_name
+
+    print(selected_player)
+    print(correct_player)
+
+    if selected_player == correct_player:
+        userinroom.points += (100 + (75 * userinroom.streak))
+        userinroom.streak += 1
+        
+        userinroom.save()
+    else:
+        userinroom.points -= 50 if userinroom.points > 0 else 0
+        userinroom.streak = 0
+        
+        userinroom.save()
+
+    return JsonResponse({})
+
+@csrf_exempt
+@login_required(login_url='start:home')
+def set_selected_player(request, slug):
+    if not request.META.get('HTTP_X_REQUESTED_WITH') == 'XMLHttpRequest':
+        return HttpResponseBadRequest('Invalid request')
+
+    room = Room.objects.filter(slug=slug).first()
+
+    selected_player = request.GET.get('selectedPlayer')
+
+    if selected_player:
+        userinroom = UserInRoom.objects.filter(room=room, user=request.user).first()
+        userinroom.selected_player = selected_player
+        userinroom.save()
+    else:
+        userinroom = UserInRoom.objects.filter(room=room, user=request.user).first()
+        userinroom.selected_player = None
+        userinroom.save()
+    
+    return JsonResponse({})
+
+@csrf_exempt
+@login_required(login_url='start:home')
+def get_all_users_points(request, slug):
+    if not request.META.get('HTTP_X_REQUESTED_WITH') == 'XMLHttpRequest':
+        return HttpResponseBadRequest('Invalid request')
+
+    room = Room.objects.filter(slug=slug).first()
+
+    usersinroom = UserInRoom.objects.filter(room=room).order_by('-points')
+
+    all_users_in_room = [{'nickname': user.user.first_name, 'points': user.points} for user in usersinroom]
+    
+    current_user = {'nickname': request.user.first_name, 'points': usersinroom.filter(user=request.user).first().points}
+    
+    return JsonResponse({'all_users_in_room': all_users_in_room, 'current_user': current_user})

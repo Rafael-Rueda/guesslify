@@ -14,7 +14,6 @@
 
     height: 100%;
 
-    background-color: #F1F1F1;
     padding: 16px;
     border-radius: 8px;
     z-index: -1;
@@ -48,7 +47,7 @@
     margin-top: 128px;
     font-size: 32px;
     font-family: sans-serif;
-    text-align: left;
+    text-align: center;
     font-weight: bold;
 }
 
@@ -58,7 +57,7 @@
     margin-top: -72px;
     font-size: 24px;
     font-family: sans-serif;
-    text-align: left;
+    text-align: center;
 }
 
 /* Circle effect */
@@ -244,4 +243,112 @@
 .vote-list progress[value]::-webkit-progress-value {
     background-image: green;
     background-size: 35px 20px, 100% 100%, 100% 100%;
+}
+
+.result-user {
+}
+
+/* Pontuation */
+
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans:ital@1&family=Quicksand:wght@500&display=swap');
+
+*{
+    font-family:'Quicksand', sans-serif;
+}
+
+.points{
+    background-color: antiquewhite;
+    padding: 5vh;
+    width: 80%;
+    border-radius: 2vh;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: -1;
+}
+
+.leaderboardCell {
+    border-radius: 50vh;
+    width: 100%;
+    display: flex;
+    margin-bottom: 5%;
+    flex-direction: row;
+    font-weight: 700;
+    align-items: center;
+    box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 15px;
+}
+
+@media screen and (max-width: 600px) {
+    .leaderboardCell {
+        width: 120%;
+        transform: translate(-35px);
+     }
+}
+
+.leaderboardCell h2{
+    font-size: 5vh;
+    margin: 0;
+}
+
+.leaderboardCell p{
+    font-size: 3vh;
+    color: rgba(0, 0, 0, 0.568);
+    margin: 0;
+}
+
+.data  {
+    margin: 2vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.leaderboardCell:nth-of-type(1) {
+    background-color: goldenrod;
+    transition: .1s;
+    animation-duration: .5s;
+    animation-iteration-count: 1;
+    animation-name: winner;
+    animation-timing-function: ease-in-out;
+    animation-direction: alternate;
+}
+
+@keyframes winner {
+    0%{
+        scale: 1;
+        rotate: 0deg;
+    }
+    50%{
+        scale: 1.4;
+        rotate: 30deg;
+    }
+    70%{
+        rotate: -20deg; 
+    }
+    100%{
+        scale: 1;
+        rotate: 0deg;
+    }
+}
+
+.leaderboardCell:nth-of-type(2) {
+    background-color: silver;
+    transition: .4s;
+    animation-delay: 1s;
+    animation-duration: .5s;
+    animation-iteration-count: 1;
+    animation-name: winner;
+    animation-timing-function: ease-in-out;
+    animation-direction: alternate;
+}
+
+.leaderboardCell:nth-of-type(3) {
+    background-color: burlywood;
+    transition: .6s;
+    animation-delay: 2s;
+    animation-duration: .5s;
+    animation-iteration-count: 1;
+    animation-name: winner;
+    animation-timing-function: ease-in-out;
+    animation-direction: alternate;
 }

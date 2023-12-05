@@ -288,6 +288,25 @@
             checkInterval = setInterval(checkRoomAvailability, 1000);
 
             // Vote time <--------------------------------------------------------------------------------------------
+            
+            function handlePlayerButtonClick(this_button) {
+                $('.vote-list button').not(this_button).css('background-color', 'var(--color-info-dark)');
+                $(this_button).css('background-color', 'lawngreen');
+
+                $.ajax({
+                    url: `{% url "game:set_selected_player" room.slug %}`,
+                    type: 'GET',
+                    dataType: 'json',
+                    data: {
+                        selectedPlayer: $(this_button).text()
+                    },
+                    success: function (data) {
+                    },
+                    error: function () {
+                        console.error('Failed to set user points.');
+                    },
+                });
+            }
 
             function getAllUsersInRoom(callback) {
                 $.ajax({
@@ -322,26 +341,24 @@
                     getAllUsersInRoom(function (all_users) {
                         for (user_in_room of all_users) {
                             var $button = $('<button>').text(user_in_room);
+                            
+                            $button.on('click', function () { handlePlayerButtonClick(this) });
+                                
                             $('.vote-list').append($button);
                         }
 
                         $('.vote-list').append($timerprogress);
                     });
                     
-                    /*
-                    {% for user_in_room in all_users_in_room %}
-                        var $button = $('<button>').text('{{ user_in_room.user.first_name }}');
-                        $('.vote-list').append($button);
-                    {% endfor %}
-                    
-                    $('.vote-list').append($timerprogress);
-                    */
                 } else {
                     $voteList.append($whoisthemusic);
 
                     getAllUsersInRoom(function (all_users) {
                         for (user_in_room of all_users) {
                             var $button = $('<button>').text(user_in_room);
+
+                            $button.on('click', function () { handlePlayerButtonClick(this) });
+
                             $voteList.append($button);
                         }
             
@@ -350,19 +367,7 @@
                         $('.room-container').append($voteList);
                     });
 
-                    /*
-                    {% for user_in_room in all_users_in_room %}
-                        var $button = $('<button>').text('{{ user_in_room.user.first_name }}');
-                        $voteList.append($button);
-                    {% endfor %}
-                    
-                    $voteList.append($timerprogress);
-
-                    $('.room-container').append($voteList);
-                    */
                 }
-                
-                
                 
             }
 
@@ -450,6 +455,17 @@
                     var $resultuser = $('<h2>').addClass('result-user').text(resultUser);
                     $('.vote-list').append($resultuser);
                 }
+
+                $.ajax({
+                    url: `{% url "game:set_user_points" room.slug %}`,
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function (data) {
+                    },
+                    error: function () {
+                        console.error('Failed to set user points.');
+                    },
+                });
             }
  
             // End the game <--------------------------------------------------------------------------------------------
@@ -457,6 +473,7 @@
             function game_ended() {
                 $('.music-container').remove();
                 clearInterval(checkMusicInterval);
+                showPoints();
                 leaveRoom();
                 deleteUser();
             }
@@ -469,6 +486,43 @@
                     success: function () {
                     },
                     error: function () {
+                    },
+                });
+            }
+
+            function showPoints() {
+                $.ajax({
+                    url: '{% url "game:get_points" room.slug %}',
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function (data) {
+                        var $points = $('<div>').addClass('points');
+
+                        // Display leaderboard cells for the top three users
+                        $.each(data.all_users_in_room.slice(0, 3), function(index, user) {
+                            var $leaderboardCell = $('<div>').addClass('leaderboardCell');
+                            var $dataDiv = $('<div>').addClass('data');
+                            var $avatarImg = $('<img>').attr('src', `https://source.boringavatars.com/beam/120/${user.nickname}?colors=264653,f4a261,e76f51`).attr('alt', user.nickname);
+                            $dataDiv.append($avatarImg);
+                    
+                            var $userData = $('<div>').addClass('data');
+                            var $userName = $('<h2>').text(user.nickname);
+                            var $userPoints = $('<p>').text(user.points);
+                            $userData.append($userName, $userPoints);
+                    
+                            $leaderboardCell.append($dataDiv, $userData);
+                            $points.append($leaderboardCell);
+                        });
+                    
+                        // Display "Your points" for the current user
+                        var $yourPoints = $('<h2>').text(`Your points: ${data.current_user.points}`).addClass('your-points');
+                        $points.append($yourPoints);
+                    
+                        // Append the points container to the room container
+                        $('.room-container').append($points);
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('Failed to show the points of users: ', error);
                     },
                 });
             }

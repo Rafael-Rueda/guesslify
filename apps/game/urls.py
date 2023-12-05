@@ -14,4 +14,7 @@ urlpatterns = [
     path('game/vote/<slug:slug>', views.vote_timer, name='vote_timer'),
     path('game/vote/resultsfalse/<slug:slug>', views.set_results_false, name='set_results_false'),
     path('game/get/allusers/<slug:slug>', views.get_all_users_in_room, name='get_all_users_in_room'),
+    path('game/set/points/<slug:slug>', views.set_user_points, name='set_user_points'),
+    path('game/set/selected-player/<slug:slug>', views.set_selected_player, name='set_selected_player'),
+    path('game/get/points/<slug:slug>', views.get_all_users_points, name='get_points'),
 ]

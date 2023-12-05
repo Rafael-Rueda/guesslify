@@ -16,6 +16,9 @@ class UserInRoom(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     room = models.ForeignKey(Room, on_delete=models.CASCADE)
     host = models.BooleanField(default=False)
+    points = models.IntegerField(default=0)
+    streak = models.IntegerField(default=0)
+    selected_player = models.CharField(max_length=32, null=True, blank=False, default=None)
 
 class TokenForUser(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)

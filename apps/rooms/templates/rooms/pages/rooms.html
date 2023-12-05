@@ -123,9 +123,12 @@
         document.addEventListener('DOMContentLoaded', function () {
             var createRoomButton = document.getElementById('create-room-button');
             var createRoomFormContainer = document.getElementById('create-room-form-container');
+            
+            createRoomButton.style.border = 'none';
 
             createRoomButton.addEventListener('click', function () {
                 createRoomFormContainer.style.display = createRoomFormContainer.style.display === 'none' ? 'block' : 'none';
+                createRoomButton.style.border = createRoomButton.style.border === 'none' ? '1px solid blue' : 'none';
             });
         });
     </script>
