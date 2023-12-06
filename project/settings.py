@@ -171,4 +171,4 @@ MESSAGE_TAGS = {
 
 SPOTIFY_CLIENT_ID = str(os.environ.get('SPOTIFY_CLIENT_ID'))
 SPOTIFY_CLIENT_SECRET = str(os.environ.get('SPOTIFY_CLIENT_SECRET'))
-SPOTIFY_REDIRECT_URI = 'http://localhost:8000/rooms/'
+SPOTIFY_REDIRECT_URI = 'http://guesslify.online/rooms/'

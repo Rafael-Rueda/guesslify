@@ -40,7 +40,7 @@ def spotify_auth(request):
         del request.session['token_info']
 
     client_id = settings.SPOTIFY_CLIENT_ID
-    redirect_uri = 'http://localhost:8000/rooms/'
+    redirect_uri = 'http://guesslify.online/rooms/'
 
     scope = 'user-library-read user-top-read user-read-playback-state user-read-recently-played'
 
